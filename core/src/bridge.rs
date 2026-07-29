@@ -71,17 +71,23 @@ async fn handle_client(
 ) {
     loop {
         tokio::select! {
-            Ok(event) = s_rx.recv() => {
-                let msg = serde_json::to_string(&BridgeEvent::Service(event)).unwrap();
-                if ws_stream.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await.is_err() { break; }
+            res = s_rx.recv() => {
+                if let Ok(event) = res {
+                    let msg = serde_json::to_string(&BridgeEvent::Service(event)).unwrap();
+                    if ws_stream.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await.is_err() { break; }
+                }
             }
-            Ok(event) = l_rx.recv() => {
-                let msg = serde_json::to_string(&BridgeEvent::Log(event)).unwrap();
-                if ws_stream.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await.is_err() { break; }
+            res = l_rx.recv() => {
+                if let Ok(event) = res {
+                    let msg = serde_json::to_string(&BridgeEvent::Log(event)).unwrap();
+                    if ws_stream.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await.is_err() { break; }
+                }
             }
-            Ok(event) = t_rx.recv() => {
-                let msg = serde_json::to_string(&BridgeEvent::Traffic(event)).unwrap();
-                if ws_stream.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await.is_err() { break; }
+            res = t_rx.recv() => {
+                if let Ok(event) = res {
+                    let msg = serde_json::to_string(&BridgeEvent::Traffic(event)).unwrap();
+                    if ws_stream.send(tokio_tungstenite::tungstenite::Message::Text(msg)).await.is_err() { break; }
+                }
             }
         }
     }
