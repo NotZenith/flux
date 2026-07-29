@@ -13,7 +13,6 @@ kotlin {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
-                implementation(compose.components.resources)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
                 implementation("io.ktor:ktor-client-core:2.3.5")
@@ -31,10 +30,12 @@ kotlin {
 }
 
 compose.desktop {
-    mainClass = "dev.flux.ui.MainKt"
-    nativeDistributions {
-        targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb)
-        packageName = "Flux"
-        packageVersion = "0.1.0"
+    application {
+        mainClass = "dev.flux.ui.MainKt"
+        nativeDistributions {
+            targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb)
+            packageName = "Flux"
+            packageVersion = "0.1.0"
+        }
     }
 }
