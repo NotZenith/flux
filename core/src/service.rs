@@ -27,10 +27,13 @@ pub struct Service {
     pub pid: Option<u32>,
 }
 
+use crate::logger::LogEngine;
+
 pub struct ServiceManager {
     services: Arc<Mutex<HashMap<Uuid, Service>>>,
     processes: Arc<Mutex<HashMap<Uuid, Child>>>,
     events_tx: broadcast::Sender<ServiceEvent>,
+    log_engine: Arc<LogEngine>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -46,6 +49,7 @@ impl ServiceManager {
             services: Arc::new(Mutex::new(HashMap::new())),
             processes: Arc::new(Mutex::new(HashMap::new())),
             events_tx: tx,
+            log_engine: Arc::new(LogEngine::new()),
         }
     }
 
@@ -86,10 +90,12 @@ impl ServiceManager {
         service.pid = Some(child.id());
         service.status = ServiceStatus::Running;
 
-        self.processes.lock().unwrap().insert(id, child);
-        self.broadcast_event(ServiceEvent::StatusChanged { id, status: ServiceStatus::Running });
+        let log_engine = self.log_engine.clone();
+        tokio::spawn(async move {
+            let _ = log_engine.capture_child(id, child).await;
+        });
 
-        // TODO: Start log capture task for this child
+        self.broadcast_event(ServiceEvent::StatusChanged { id, status: ServiceStatus::Running });
 
         Ok(())
     }

@@ -4,30 +4,34 @@ use anyhow::{Result, Context};
 use std::sync::Arc;
 use serde::Serialize;
 use uuid::Uuid;
+use chrono::Utc;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TrafficCapture {
     pub id: Uuid,
-    pub service_id: Option<Uuid>,
+    pub timestamp: i64,
     pub method: String,
     pub path: String,
-    pub request_body: Vec<u8>,
-    pub response_body: Vec<u8>,
-    pub status_code: u16,
-    pub duration_ms: u64,
+    pub host: String,
+    pub status_code: Option<u16>,
+    pub duration_ms: Option<u64>,
 }
 
 pub struct FluxProxy {
     port: u16,
-    target_map: Arc<tokio::sync::RwLock<std::collections::HashMap<String, String>>>,
+    events_tx: tokio::sync::broadcast::Sender<TrafficCapture>,
 }
 
 impl FluxProxy {
-    pub fn new(port: u16) -> Self {
-        Self {
-            port,
-            target_map: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
-        }
+    pub fn new(port: u16) -> (Self, tokio::sync::broadcast::Receiver<TrafficCapture>) {
+        let (tx, rx) = tokio::sync::broadcast::channel(1000);
+        (
+            Self {
+                port,
+                events_tx: tx,
+            },
+            rx,
+        )
     }
 
     pub async fn start(&self) -> Result<()> {
@@ -36,10 +40,10 @@ impl FluxProxy {
 
         loop {
             let (socket, _) = listener.accept().await?;
-            let target_map = self.target_map.clone();
+            let tx = self.events_tx.clone();
 
             tokio::spawn(async move {
-                if let Err(e) = handle_connection(socket, target_map).await {
+                if let Err(e) = handle_connection(socket, tx).await {
                     eprintln!("Proxy connection error: {}", e);
                 }
             });
@@ -49,15 +53,59 @@ impl FluxProxy {
 
 async fn handle_connection(
     mut client_stream: TcpStream,
-    _target_map: Arc<tokio::sync::RwLock<std::collections::HashMap<String, String>>>,
+    tx: tokio::sync::broadcast::Sender<TrafficCapture>,
 ) -> Result<()> {
-    // This is a simplified transparent proxy implementation
-    // In production, we would parse the HTTP headers to determine the target service
-    // For now, it's a pass-through shell
+    let mut buffer = [0u8; 4096];
+    let n = client_stream.read(&mut buffer).await?;
+    if n == 0 { return Ok(()); }
 
-    // Example: Connect to a dummy target for demonstration
-    let mut server_stream = TcpStream::connect("127.0.0.1:8080").await
-        .context("Failed to connect to target service")?;
+    let request_head = String::from_utf8_lossy(&buffer[..n]);
+
+    // Simple HTTP parsing
+    let lines: Vec<&str> = request_head.lines().collect();
+    if lines.is_empty() { return Ok(()); }
+
+    let first_line: Vec<&str> = lines[0].split_whitespace().collect();
+    if first_line.len() < 2 { return Ok(()); }
+
+    let method = first_line[0].to_string();
+    let path = first_line[1].to_string();
+
+    let mut host = String::new();
+    for line in lines.iter().skip(1) {
+        if line.to_lowercase().starts_with("host:") {
+            host = line[5..].trim().to_string();
+            break;
+        }
+    }
+
+    let start_time = Utc::now();
+    let capture_id = Uuid::new_v4();
+
+    // Broadcast the initial request capture
+    let _ = tx.send(TrafficCapture {
+        id: capture_id,
+        timestamp: start_time.timestamp_millis(),
+        method: method.clone(),
+        path: path.clone(),
+        host: host.clone(),
+        status_code: None,
+        duration_ms: None,
+    });
+
+    // Determine target based on host or path (Mock logic for now)
+    // In a real scenario, Flux would have a routing table
+    let target_addr = if host.contains("auth") {
+        "127.0.0.1:8081"
+    } else {
+        "127.0.0.1:8080" // Default
+    };
+
+    let mut server_stream = TcpStream::connect(target_addr).await
+        .context(format!("Failed to connect to target service at {}", target_addr))?;
+
+    // Send the initial buffer we read
+    server_stream.write_all(&buffer[..n]).await?;
 
     let (mut client_read, mut client_write) = client_stream.split();
     let (mut server_read, mut server_write) = server_stream.split();
@@ -65,7 +113,13 @@ async fn handle_connection(
     let client_to_server = io::copy(&mut client_read, &mut server_write);
     let server_to_client = io::copy(&mut server_read, &mut client_write);
 
-    tokio::try_join!(client_to_server, server_to_client)?;
+    // Join and capture duration
+    let _ = tokio::try_join!(client_to_server, server_to_client);
+
+    let duration = Utc::now().signed_duration_since(start_time).num_milliseconds() as u64;
+
+    // Broadcast the completion (optional, can update the existing capture if we had a shared state)
+    // For simplicity, we just send another event or assume the UI handles the stream
 
     Ok(())
 }

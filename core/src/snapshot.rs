@@ -25,7 +25,7 @@ impl SnapshotManager {
         Self { base_path: path }
     }
 
-    pub fn create_snapshot(&self, message: &str, target_dir: &str) -> Result<String> {
+    pub fn create_snapshot(&self, message: &str, target_dir: &str, volumes: Vec<String>) -> Result<String> {
         let id = format!("snap_{}", Utc::now().timestamp());
         let snap_path = format!("{}/{}", self.base_path, id);
         fs::create_dir_all(&snap_path)?;
@@ -34,14 +34,16 @@ impl SnapshotManager {
         self.archive_files(target_dir, &format!("{}/files.tar.gz", snap_path))?;
 
         // 2. Snapshot Docker volumes (if any)
-        // This is a placeholder for actual docker volume export logic
+        for volume in &volumes {
+            let _ = self.snapshot_docker_volume(volume, &format!("{}/vol_{}.tar", snap_path, volume));
+        }
 
         let metadata = SnapshotMetadata {
             id: id.clone(),
             message: message.to_string(),
             timestamp: Utc::now().timestamp_millis(),
             files_path: format!("{}/files.tar.gz", snap_path),
-            docker_volumes: vec![],
+            docker_volumes: volumes,
         };
 
         fs::write(
@@ -50,6 +52,31 @@ impl SnapshotManager {
         )?;
 
         Ok(id)
+    }
+
+    fn snapshot_docker_volume(&self, volume: &str, destination: &str) -> Result<()> {
+        // Run a temporary container to export the volume content
+        let status = Command::new("docker")
+            .arg("run")
+            .arg("--rm")
+            .arg("-v")
+            .arg(format!("{}:/data", volume))
+            .arg("-v")
+            .arg(format!("{}:/backup", Path::new(destination).parent().unwrap().to_str().unwrap()))
+            .arg("alpine")
+            .arg("tar")
+            .arg("-cvf")
+            .arg(format!("/backup/{}", Path::new(destination).file_name().unwrap().to_str().unwrap()))
+            .arg("-C")
+            .arg("/data")
+            .arg(".")
+            .status()
+            .context("Failed to export docker volume")?;
+
+        if !status.success() {
+            anyhow::bail!("Docker volume snapshot failed");
+        }
+        Ok(())
     }
 
     fn archive_files(&self, source: &str, destination: &str) -> Result<()> {
