@@ -38,7 +38,11 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
     - name: Build with Gradle
-      run: cd ui && ./gradlew build
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: 8.5
+    - name: Run Build
+      run: cd ui && gradle build
 
   release:
     name: Release Binaries
