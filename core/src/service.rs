@@ -88,7 +88,7 @@ impl ServiceManager {
             .spawn()
             .context(format!("Failed to start service: {}", service.name))?;
 
-        service.pid = Some(child.id());
+        service.pid = child.id();
         service.status = ServiceStatus::Running;
 
         let log_engine = self.log_engine.clone();
@@ -101,10 +101,10 @@ impl ServiceManager {
         Ok(())
     }
 
-    pub fn stop_service(&self, id: Uuid) -> Result<()> {
+    pub async fn stop_service(&self, id: Uuid) -> Result<()> {
         let mut processes = self.processes.lock().unwrap();
         if let Some(mut child) = processes.remove(&id) {
-            child.kill()?;
+            child.kill().await?;
             let mut services = self.services.lock().unwrap();
             if let Some(service) = services.get_mut(&id) {
                 service.status = ServiceStatus::Stopped;

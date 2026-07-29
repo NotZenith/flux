@@ -35,7 +35,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi, org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb)
             packageName = "Flux"
-            packageVersion = "0.1.0"
+            packageVersion = "1.0.0"
         }
     }
 }
