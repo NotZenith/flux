@@ -3,7 +3,6 @@ use tokio::process::Child;
 use tokio::sync::broadcast;
 use uuid::Uuid;
 use anyhow::Result;
-use std::sync::Arc;
 use chrono::Utc;
 use serde::Serialize;
 

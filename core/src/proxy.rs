@@ -1,7 +1,6 @@
 use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use anyhow::{Result, Context};
-use std::sync::Arc;
 use serde::Serialize;
 use uuid::Uuid;
 use chrono::Utc;

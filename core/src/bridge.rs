@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio_tungstenite::accept_async;
-use futures_util::{StreamExt, SinkExt};
+use futures_util::SinkExt;
 use tokio::sync::broadcast;
 use serde::Serialize;
 use anyhow::Result;

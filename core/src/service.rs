@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
-use std::process::{Child, Command, Stdio};
+use tokio::process::{Child, Command};
+use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
 use anyhow::{Result, Context};
