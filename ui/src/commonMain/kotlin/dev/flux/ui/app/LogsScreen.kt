@@ -24,15 +24,10 @@ data class LogLine(
     val level: String
 )
 
+import androidx.compose.runtime.snapshots.SnapshotStateList
+
 @Composable
-fun LogsScreen() {
-    val logs = remember { 
-        mutableStateListOf<LogLine>(
-            LogLine("gateway", 1690000000000, "Starting gateway...", "info"),
-            LogLine("auth-svc", 1690000000100, "Listening on port 8081", "info"),
-            LogLine("db", 1690000000200, "Connection received from 127.0.0.1", "debug")
-        )
-    }
+fun LogsScreen(logs: SnapshotStateList<LogLine>) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(

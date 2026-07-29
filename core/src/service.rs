@@ -125,4 +125,27 @@ impl ServiceManager {
     pub fn subscribe(&self) -> broadcast::Receiver<ServiceEvent> {
         self.events_tx.subscribe()
     }
+
+    pub fn log_engine(&self) -> Arc<LogEngine> {
+        self.log_engine.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_service_manager_init() {
+        let manager = ServiceManager::new();
+        assert_eq!(manager.get_services().len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_add_service() {
+        let manager = ServiceManager::new();
+        let id = manager.add_service("test".to_string(), "ls".to_string(), vec![]);
+        assert_eq!(manager.get_services().len(), 1);
+        assert_eq!(manager.get_services()[0].name, "test");
+    }
 }

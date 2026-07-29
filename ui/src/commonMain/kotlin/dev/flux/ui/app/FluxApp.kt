@@ -11,6 +11,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 @Composable
 fun FluxApp() {
     var currentScreen by remember { mutableStateOf(Screen.Dashboard) }
+    val logs = remember { mutableStateListOf<LogLine>() }
+    val traffic = remember { mutableStateListOf<TrafficEntry>() }
+
+    LaunchedEffect(Unit) {
+        FluxBridgeClient(
+            onLog = { logs.add(it) },
+            onTraffic = { traffic.add(it) }
+        ).connect()
+    }
 
     MaterialTheme(
         colorScheme = darkColorScheme()
@@ -56,8 +65,8 @@ fun FluxApp() {
                 Box(modifier = Modifier.weight(1f)) {
                     when (currentScreen) {
                         Screen.Dashboard -> DashboardScreen()
-                        Screen.Logs -> LogsScreen()
-                        Screen.Traffic -> TrafficScreen()
+                        Screen.Logs -> LogsScreen(logs)
+                        Screen.Traffic -> TrafficScreen(traffic)
                         Screen.Snapshots -> SnapshotsScreen()
                     }
                 }

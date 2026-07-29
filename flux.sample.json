@@ -1,0 +1,20 @@
+{
+  "project_name": "Flux Sample",
+  "services": [
+    {
+      "name": "gateway",
+      "command": "python3",
+      "args": ["-m", "http.server", "8080"]
+    },
+    {
+      "name": "auth-svc",
+      "command": "python3",
+      "args": ["-m", "http.server", "8081"],
+      "depends_on": ["gateway"]
+    }
+  ],
+  "network": {
+    "proxy_port": 8888,
+    "enable_interception": true
+  }
+}

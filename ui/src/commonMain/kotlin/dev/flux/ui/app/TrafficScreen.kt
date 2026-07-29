@@ -19,17 +19,10 @@ data class TrafficEntry(
     val service: String
 )
 
-@Composable
-fun TrafficScreen() {
-    val traffic = remember {
-        listOf(
-            TrafficEntry("GET", "/api/v1/user", 200, 45, "auth-svc"),
-            TrafficEntry("POST", "/api/v1/login", 401, 120, "auth-svc"),
-            TrafficEntry("GET", "/products/123", 200, 12, "catalog-svc"),
-            TrafficEntry("PUT", "/orders/new", 201, 89, "order-svc")
-        )
-    }
+import androidx.compose.runtime.snapshots.SnapshotStateList
 
+@Composable
+fun TrafficScreen(traffic: SnapshotStateList<TrafficEntry>) {
     var selectedEntry by remember { mutableStateOf<TrafficEntry?>(null) }
 
     Row(modifier = Modifier.fillMaxSize()) {
