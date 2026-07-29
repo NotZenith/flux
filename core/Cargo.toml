@@ -1,0 +1,25 @@
+[package]
+name = "flux-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["Zenith <zenith@example.com>"]
+description = "High-performance engine for local development orchestration and observability."
+license = "MIT"
+
+[dependencies]
+tokio = { version = "1.36", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.11"
+hyper = { version = "1.0", features = ["full"] }
+h2 = "0.4"
+tower = "0.4"
+sqlite = "0.33"
+sysinfo = "0.30"
+notify = "6.1"
+futures = "0.3"
+dashmap = "5.5"
+uuid = { version = "1.7", features = ["v4"] }
+chrono = "0.4"
